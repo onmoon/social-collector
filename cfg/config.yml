@@ -1,9 +1,9 @@
 database:
   driver:           postgres
-  database:         fbs
-  username:         fbs
-  password:         f65_p455
-  host:             192.168.0.123
+  database:         test
+  username:         test
+  password:         test
+  host:             192.168.0.1
   port:             5432
 
 fullcontact:
