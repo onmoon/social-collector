@@ -12,9 +12,9 @@ GOINSTALL		=	$(GOCMD) install
 export GOPATH
 
 # buildable packages
-MAIN_PKGS 		:=	fbs.com/sheduler \
-									fbs.com/sheduler/providers \
-									fbs.com/sheduler/types
+MAIN_PKGS 		:=	fbs.com/social-collector \
+									fbs.com/social-collector/providers \
+									fbs.com/social-collector/types
 
 # usable libraries
 LIBS_PKGS 		:=
@@ -29,9 +29,9 @@ DEPS_PKGS 		:=		gopkg.in/yaml.v2 \
 
 
 # packages for testing
-TEST_PKGS		:=	fbs.com/sheduler \
-								fbs.com/sheduler/providers \
-								fbs.com/sheduler/types 
+TEST_PKGS		:=	fbs.com/social-collector \
+								fbs.com/social-collector/providers \
+								fbs.com/social-collector/types 
 
 
 # buildable lists

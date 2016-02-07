@@ -2,7 +2,7 @@ package providers
 
 import (
 	"encoding/json"
-	"fbs.com/sheduler/types"
+	"fbs.com/social-collector/types"
 	. "github.com/smartystreets/goconvey/convey"
 	_ "log"
 	"net/http"

@@ -3,7 +3,7 @@ package providers
 import (
 	"encoding/json"
 	"errors"
-	"fbs.com/sheduler/types"
+	"fbs.com/social-collector/types"
 	"io"
 	_ "log"
 	"net/http"

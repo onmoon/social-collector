@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql/driver"
 	_ "errors"
-	"fbs.com/sheduler/types"
+	"fbs.com/social-collector/types"
 	"github.com/erikstmartin/go-testdb"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"

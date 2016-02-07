@@ -2,8 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"fbs.com/sheduler/providers"
-	"fbs.com/sheduler/types"
+	"fbs.com/social-collector/providers"
+	"fbs.com/social-collector/types"
 	"flag"
 	"fmt"
 	"github.com/go-gorp/gorp"
