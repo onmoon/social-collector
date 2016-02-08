@@ -74,56 +74,86 @@ func TestWorker(t *testing.T) {
 
 			Convey("Check worker func", func() {
 
-				maxId := 0
 				messages := make(chan types.User, 1)
+				maxId := 0
 
-				Convey("Create empty channel", func() {
+				Convey("Messages length is 0", func() {
+					So(len(messages), ShouldEqual, 0)
+				})
 
-					test := types.User{Id: 1, Email: "test@test.com"}
+				Convey("Max Id is 0", func() {
+					So(maxId, ShouldEqual, 0)
+				})
 
-					messages <- test
+				Convey("Run worker with user", func() {
+
+					testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+
+						columns := []string{"id", "email"}
+						rows := "2,test@test.ru"
+
+						return testdb.RowsFromCSVString(columns, rows), nil
+					})
+
+					go worker(messages, &maxId)
 
 					user := <-messages
 
-					So(user, ShouldResemble, types.User{Id: 1, Email: "test@test.com"})
+					So(user, ShouldResemble, types.User{Id: 2, Email: "test@test.ru"})
+					So(maxId, ShouldEqual, 2)
+					So(len(messages), ShouldEqual, 0)
 
-					Convey("Run worker with user", func() {
+					testdb.Reset()
 
-						testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+				})
 
-							columns := []string{"id", "email"}
-							rows := "2,test@test.ru"
+				Convey("Run worker without user", func() {
 
-							return testdb.RowsFromCSVString(columns, rows), nil
-						})
+					testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
 
-						go worker(messages, maxId)
+						columns := []string{"id", "email"}
+						rows := ""
 
-						user := <-messages
-
-						So(user, ShouldResemble, types.User{Id: 2, Email: "test@test.ru"})
-
-						testdb.Reset()
-
+						return testdb.RowsFromCSVString(columns, rows), nil
 					})
-					Convey("Run worker without user", func() {
 
-						testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+					go worker(messages, &maxId)
 
-							columns := []string{"id", "email"}
-							rows := ""
+					So(maxId, ShouldEqual, 0)
+					So(len(messages), ShouldEqual, 0)
 
-							return testdb.RowsFromCSVString(columns, rows), nil
-						})
+					testdb.Reset()
 
-						go worker(messages, maxId)
+				})
+			})
 
-						So(len(messages), ShouldEqual, 0)
-						So(maxId, ShouldEqual, 0)
+			Convey("Check start func", func() {
 
-						testdb.Reset()
+				So(len(messages), ShouldEqual, 0)
 
+				Convey("Run with user", func() {
+
+					testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
+
+						columns := []string{"id", "email"}
+						rows := "2,test@test.ru"
+
+						return testdb.RowsFromCSVString(columns, rows), nil
 					})
+					testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
+
+						return testResult{1, 1}, nil
+					})
+					backend := testBackend(200, `{"status":200, "socialProfiles":[{"type":"facebook", "url":"http://test.com"}]}`)
+					defer backend.Close()
+
+					Cfg.Fullcontact.Url = backend.URL
+
+					go start()
+
+					So(len(messages), ShouldEqual, 0)
+
+					testdb.Reset()
 
 				})
 

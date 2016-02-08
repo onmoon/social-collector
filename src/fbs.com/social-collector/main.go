@@ -20,6 +20,7 @@ var (
 	Cfg       types.Config
 	DbMap     *gorp.DbMap
 )
+var messages = make(chan types.User, 1)
 
 func main() {
 	flag.Parse()
@@ -33,18 +34,12 @@ func main() {
 		panic(err)
 	}
 
-	maxId := 0
-	messages := make(chan types.User, 1)
+	start()
+}
+func start() {
+	go workerLoop(messages)
 
-	go worker(messages, maxId)
-
-	for {
-		user := <-messages
-		err := search(user)
-		if err != nil {
-			log.Printf("%s", err)
-		}
-	}
+	listenLoop()
 }
 
 func init() {
@@ -71,8 +66,16 @@ func initDb() (err error) {
 	DbMap = &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
 	DbMap.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
 	DbMap.AddTableWithName(types.Social{}, `social"."users`)
-
 	return
+}
+func listenLoop() {
+	for {
+		user := <-messages
+		err := search(user)
+		if err != nil {
+			log.Printf("%s", err)
+		}
+	}
 }
 
 func search(user types.User) (err error) {
@@ -90,33 +93,45 @@ func search(user types.User) (err error) {
 	return
 }
 
-func worker(messages chan<- types.User, maxId int) {
+func workerLoop(messages chan<- types.User) {
+
+	maxId := 0
 
 	for {
-
-		var users []types.User
-		_, err := DbMap.Select(&users, "select u.id, u.email from personal_area.user as u left join social.users as su on su.user_id = u.id where u.email is not null  and su.user_id is null and u.id > :maxId order by u.id limit 100", map[string]interface{}{
-			"maxId": maxId,
-		})
-		if err != nil {
-			log.Printf("Select from db:%s", err)
-		}
-
-		if len(users) > 0 {
-
-			for _, user := range users {
-				messages <- user
-			}
-			maxId = users[len(users)-1].Id
-
-		} else {
-			maxId = 0
-		}
-
-		time.Sleep(time.Second * 10)
-
+		worker(messages, &maxId)
 	}
+
 }
+func worker(messages chan<- types.User, maxId *int) {
+
+	var users []types.User
+
+	_, err := DbMap.Select(&users, "select u.id, u.email from personal_area.user as u left join social.users as su on su.user_id = u.id where u.email is not null  and su.user_id is null and u.id > :maxId order by u.id limit 100", map[string]interface{}{
+		"maxId": *maxId,
+	})
+
+	if err != nil {
+		log.Printf("Select from db:%s", err)
+	}
+
+	if len(users) > 0 {
+
+		*maxId = users[len(users)-1].Id
+
+		for _, user := range users {
+			messages <- user
+		}
+
+	} else {
+		*maxId = 0
+	}
+
+	defer func() {
+		time.Sleep(time.Second * 10)
+	}()
+
+}
+
 func generateDataSourceName() string {
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", Cfg.Database.Host, Cfg.Database.Port, Cfg.Database.Username, Cfg.Database.Password, Cfg.Database.Database)
 }
