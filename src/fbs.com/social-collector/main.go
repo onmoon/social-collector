@@ -12,13 +12,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"time"
 )
 
 var (
 	configUrl string
-	Cfg       types.Config
-	DbMap     *gorp.DbMap
+	cfg       types.Config
+	dbMap     *gorp.DbMap
 )
 
 func main() {
@@ -33,10 +32,7 @@ func main() {
 		panic(err)
 	}
 
-	for {
-		start()
-	}
-
+	start()
 }
 func start() {
 
@@ -59,19 +55,19 @@ func initCfg() (err error) {
 		return
 	}
 
-	err = yaml.Unmarshal(data, &Cfg)
+	err = yaml.Unmarshal(data, &cfg)
 	return
 }
 
 func initDb() (err error) {
 
-	db, err := sql.Open(Cfg.Database.Driver, generateDataSourceName())
+	db, err := sql.Open(cfg.Database.Driver, generateDataSourceName())
 	if err != nil || db.Ping() != nil {
 		return
 	}
-	DbMap = &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
-	DbMap.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
-	DbMap.AddTableWithName(types.Social{}, `social"."users`)
+	dbMap = &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
+	dbMap.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
+	dbMap.AddTableWithName(types.Social{}, `social"."users`)
 	return
 }
 func listenLoop(messages *chan types.User) {
@@ -82,7 +78,7 @@ func listenLoop(messages *chan types.User) {
 		}
 	}()
 
-	var provider = providers.Fullcontact{Url: Cfg.Fullcontact.Url, ApiKey: Cfg.Fullcontact.ApiKey}
+	var provider = providers.Fullcontact{Url: cfg.Fullcontact.Url, ApiKey: cfg.Fullcontact.ApiKey}
 
 	for {
 		user := <-*messages
@@ -98,7 +94,7 @@ func search(user types.User, provider *providers.Fullcontact) (err error) {
 	social, err := provider.Request(user)
 
 	if err == nil && social.IsValid() == nil {
-		err = DbMap.Insert(&social)
+		err = dbMap.Insert(&social)
 	}
 	return
 }
@@ -114,14 +110,14 @@ func workerLoop(messages *chan types.User) {
 	maxId := 0
 
 	for {
-		worker(*messages, &maxId)
+		worker(messages, &maxId)
 	}
 
 }
-func worker(messages chan<- types.User, maxId *int) {
+func worker(messages *chan types.User, maxId *int) {
 	var users []types.User
 
-	_, err := DbMap.Select(&users, "select u.id, u.email from personal_area.user as u left join social.users as su on su.user_id = u.id where u.email is not null  and su.user_id is null and u.id > :maxId order by u.id limit 100", map[string]interface{}{
+	_, err := dbMap.Select(&users, "select u.id, u.email from personal_area.user as u left join social.users as su on su.user_id = u.id where u.email is not null  and su.user_id is null and u.id > :maxId order by u.id limit 100", map[string]interface{}{
 		"maxId": *maxId,
 	})
 
@@ -135,17 +131,14 @@ func worker(messages chan<- types.User, maxId *int) {
 		*maxId = users[len(users)-1].Id
 
 		for _, user := range users {
-			messages <- user
+			*messages <- user
 		}
 
 	} else {
 		*maxId = 0
 	}
-
-	time.Sleep(time.Second * 10)
-
 }
 
 func generateDataSourceName() string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", Cfg.Database.Host, Cfg.Database.Port, Cfg.Database.Username, Cfg.Database.Password, Cfg.Database.Database)
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.Host, cfg.Database.Port, cfg.Database.Username, cfg.Database.Password, cfg.Database.Database)
 }

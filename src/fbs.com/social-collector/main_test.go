@@ -40,7 +40,7 @@ func TestWorker(t *testing.T) {
 
 		Convey("Check db", func() {
 
-			Cfg.Database.Driver = `testdb`
+			cfg.Database.Driver = `testdb`
 			err := initDb()
 
 			So(err, ShouldBeNil)
@@ -59,7 +59,7 @@ func TestWorker(t *testing.T) {
 
 					user := types.User{Email: "test@test.com", Id: 1}
 
-					provider := providers.Fullcontact{Url: backend.URL, ApiKey: Cfg.Fullcontact.ApiKey}
+					provider := providers.Fullcontact{Url: backend.URL, ApiKey: cfg.Fullcontact.ApiKey}
 
 					err := search(user, &provider)
 
@@ -96,7 +96,7 @@ func TestWorker(t *testing.T) {
 						return testdb.RowsFromCSVString(columns, rows), nil
 					})
 
-					go worker(messages, &maxId)
+					go worker(&messages, &maxId)
 
 					user := <-messages
 
@@ -118,7 +118,7 @@ func TestWorker(t *testing.T) {
 						return testdb.RowsFromCSVString(columns, rows), nil
 					})
 
-					go worker(messages, &maxId)
+					go worker(&messages, &maxId)
 
 					So(maxId, ShouldEqual, 0)
 					So(len(messages), ShouldEqual, 0)
@@ -146,7 +146,7 @@ func TestWorker(t *testing.T) {
 					backend := testBackend(200, `{"status":200, "socialProfiles":[{"type":"facebook", "url":"http://test.com"}]}`)
 					defer backend.Close()
 
-					Cfg.Fullcontact.Url = backend.URL
+					cfg.Fullcontact.Url = backend.URL
 
 					go start()
 
@@ -156,7 +156,7 @@ func TestWorker(t *testing.T) {
 
 			})
 
-			DbMap.Db.Close()
+			dbMap.Db.Close()
 
 		})
 
@@ -172,49 +172,49 @@ func TestWorker(t *testing.T) {
 
 			Convey("Check database config", func() {
 				Convey("Driver:", func() {
-					So(Cfg.Database.Driver, ShouldHaveSameTypeAs, "")
-					So(Cfg.Database.Driver, ShouldNotBeNil)
+					So(cfg.Database.Driver, ShouldHaveSameTypeAs, "")
+					So(cfg.Database.Driver, ShouldNotBeNil)
 				})
 				Convey("Database:", func() {
-					So(Cfg.Database.Database, ShouldHaveSameTypeAs, "")
-					So(Cfg.Database.Database, ShouldNotBeNil)
+					So(cfg.Database.Database, ShouldHaveSameTypeAs, "")
+					So(cfg.Database.Database, ShouldNotBeNil)
 				})
 				Convey("Username:", func() {
-					So(Cfg.Database.Username, ShouldHaveSameTypeAs, "")
-					So(Cfg.Database.Username, ShouldNotBeNil)
+					So(cfg.Database.Username, ShouldHaveSameTypeAs, "")
+					So(cfg.Database.Username, ShouldNotBeNil)
 				})
 				Convey("Password:", func() {
-					So(Cfg.Database.Password, ShouldHaveSameTypeAs, "")
-					So(Cfg.Database.Password, ShouldNotBeNil)
+					So(cfg.Database.Password, ShouldHaveSameTypeAs, "")
+					So(cfg.Database.Password, ShouldNotBeNil)
 				})
 				Convey("Port:", func() {
-					So(Cfg.Database.Port, ShouldHaveSameTypeAs, 1)
-					So(Cfg.Database.Port, ShouldNotBeNil)
+					So(cfg.Database.Port, ShouldHaveSameTypeAs, 1)
+					So(cfg.Database.Port, ShouldNotBeNil)
 				})
 				Convey("Host:", func() {
-					So(Cfg.Database.Host, ShouldHaveSameTypeAs, "")
-					So(Cfg.Database.Host, ShouldNotBeNil)
+					So(cfg.Database.Host, ShouldHaveSameTypeAs, "")
+					So(cfg.Database.Host, ShouldNotBeNil)
 				})
 			})
 
 			Convey("Check Fullcontact config", func() {
 				Convey("Url:", func() {
-					So(Cfg.Fullcontact.Url, ShouldHaveSameTypeAs, "")
-					So(Cfg.Fullcontact.Url, ShouldNotBeNil)
+					So(cfg.Fullcontact.Url, ShouldHaveSameTypeAs, "")
+					So(cfg.Fullcontact.Url, ShouldNotBeNil)
 				})
 				Convey("ApiKey:", func() {
-					So(Cfg.Fullcontact.ApiKey, ShouldHaveSameTypeAs, "")
-					So(Cfg.Fullcontact.ApiKey, ShouldNotBeNil)
+					So(cfg.Fullcontact.ApiKey, ShouldHaveSameTypeAs, "")
+					So(cfg.Fullcontact.ApiKey, ShouldNotBeNil)
 				})
 			})
 
 			Convey("Test generateDataSourceName()", func() {
-				Cfg.Database.Driver = "test"
-				Cfg.Database.Database = "test"
-				Cfg.Database.Username = "test"
-				Cfg.Database.Password = "test"
-				Cfg.Database.Port = 1234
-				Cfg.Database.Host = "localhost"
+				cfg.Database.Driver = "test"
+				cfg.Database.Database = "test"
+				cfg.Database.Username = "test"
+				cfg.Database.Password = "test"
+				cfg.Database.Port = 1234
+				cfg.Database.Host = "localhost"
 				So(generateDataSourceName(), ShouldEqual, "host=localhost port=1234 user=test password=test dbname=test sslmode=disable")
 			})
 
