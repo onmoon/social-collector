@@ -22,7 +22,7 @@ type Social struct {
 	PhotoUrl    string `db:"photo_url"`
 }
 
-func (s Social) Valid() bool {
+func (s Social) IsValid() bool {
 	if s.UserId == 0 {
 		return false
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql/driver"
 	_ "errors"
+	"fbs.com/social-collector/providers"
 	"fbs.com/social-collector/types"
 	"github.com/erikstmartin/go-testdb"
 	. "github.com/smartystreets/goconvey/convey"
@@ -52,15 +53,15 @@ func TestWorker(t *testing.T) {
 					backend := testBackend(code, `{"status":200, "socialProfiles":[{"type":"facebook", "url":"http://test.com"}]}`)
 					defer backend.Close()
 
-					Cfg.Fullcontact.Url = backend.URL
-
 					testdb.SetExecWithArgsFunc(func(query string, args []driver.Value) (result driver.Result, err error) {
 						return testResult{1, 1}, nil
 					})
 
 					user := types.User{Email: "test@test.com", Id: 1}
 
-					err := search(user)
+					provider := providers.Fullcontact{Url: backend.URL, ApiKey: Cfg.Fullcontact.ApiKey}
+
+					err := search(user, &provider)
 
 					if code == 200 {
 						So(err, ShouldBeNil)
@@ -129,8 +130,6 @@ func TestWorker(t *testing.T) {
 
 			Convey("Check start func", func() {
 
-				So(len(messages), ShouldEqual, 0)
-
 				Convey("Run with user", func() {
 
 					testdb.SetQueryWithArgsFunc(func(query string, args []driver.Value) (result driver.Rows, err error) {
@@ -151,8 +150,6 @@ func TestWorker(t *testing.T) {
 
 					go start()
 
-					So(len(messages), ShouldEqual, 0)
-
 					testdb.Reset()
 
 				})
@@ -166,7 +163,7 @@ func TestWorker(t *testing.T) {
 		Convey("Check config", func() {
 
 			Convey("Empty Config Url", func() {
-				ConfigUrl = ""
+				configUrl = ""
 
 				err := initCfg()
 

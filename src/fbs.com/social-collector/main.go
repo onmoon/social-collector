@@ -16,11 +16,10 @@ import (
 )
 
 var (
-	ConfigUrl string
+	configUrl string
 	Cfg       types.Config
 	DbMap     *gorp.DbMap
 )
-var messages = make(chan types.User, 1)
 
 func main() {
 	flag.Parse()
@@ -34,21 +33,28 @@ func main() {
 		panic(err)
 	}
 
-	start()
+	for {
+		start()
+	}
+
 }
 func start() {
-	go workerLoop(messages)
 
-	listenLoop()
+	var messages = make(chan types.User, 1)
+
+	go workerLoop(&messages)
+
+	listenLoop(&messages)
+
 }
 
 func init() {
-	flag.StringVar(&ConfigUrl, "config", "cfg/config.yml", "a string")
+	flag.StringVar(&configUrl, "config", "cfg/config.yml", "a string")
 }
 
 func initCfg() (err error) {
 
-	data, err := ioutil.ReadFile(ConfigUrl)
+	data, err := ioutil.ReadFile(configUrl)
 	if err != nil {
 		return
 	}
@@ -68,42 +74,51 @@ func initDb() (err error) {
 	DbMap.AddTableWithName(types.Social{}, `social"."users`)
 	return
 }
-func listenLoop() {
+func listenLoop(messages *chan types.User) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			listenLoop(messages)
+		}
+	}()
+
+	var provider = providers.Fullcontact{Url: Cfg.Fullcontact.Url, ApiKey: Cfg.Fullcontact.ApiKey}
+
 	for {
-		user := <-messages
-		err := search(user)
+		user := <-*messages
+		err := search(user, &provider)
 		if err != nil {
 			log.Printf("%s", err)
 		}
 	}
 }
 
-func search(user types.User) (err error) {
-
-	provider := providers.Fullcontact{Url: Cfg.Fullcontact.Url, ApiKey: Cfg.Fullcontact.ApiKey}
+func search(user types.User, provider *providers.Fullcontact) (err error) {
 
 	social, err := provider.Request(user)
 
-	if err != nil {
-		return
-	}
-	if social.Valid() {
+	if err == nil && social.IsValid() {
 		err = DbMap.Insert(&social)
 	}
 	return
 }
 
-func workerLoop(messages chan<- types.User) {
+func workerLoop(messages *chan types.User) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			workerLoop(messages)
+		}
+	}()
 
 	maxId := 0
 
 	for {
-		worker(messages, &maxId)
+		worker(*messages, &maxId)
 	}
 
 }
 func worker(messages chan<- types.User, maxId *int) {
-
 	var users []types.User
 
 	_, err := DbMap.Select(&users, "select u.id, u.email from personal_area.user as u left join social.users as su on su.user_id = u.id where u.email is not null  and su.user_id is null and u.id > :maxId order by u.id limit 100", map[string]interface{}{
@@ -112,6 +127,7 @@ func worker(messages chan<- types.User, maxId *int) {
 
 	if err != nil {
 		log.Printf("Select from db:%s", err)
+		return
 	}
 
 	if len(users) > 0 {
@@ -126,9 +142,7 @@ func worker(messages chan<- types.User, maxId *int) {
 		*maxId = 0
 	}
 
-	defer func() {
-		time.Sleep(time.Second * 10)
-	}()
+	time.Sleep(time.Second * 10)
 
 }
 

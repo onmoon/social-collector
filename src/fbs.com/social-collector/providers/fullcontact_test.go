@@ -149,7 +149,7 @@ func TestRequest(t *testing.T) {
 			social, err := provider.Request(user)
 
 			So(social, ShouldResemble, types.Social{UserId: 1, TwitterUrl: "http://twitter.com/test", FacebookUrl: "http://facebook.com/test"})
-			So(social.Valid(), ShouldBeTrue)
+			So(social.IsValid(), ShouldBeTrue)
 			So(err, ShouldBeNil)
 		})
 
@@ -183,7 +183,7 @@ func TestRequest(t *testing.T) {
 			social, err := provider.Request(user)
 
 			So(social, ShouldResemble, types.Social{UserId: 1, PhotoUrl: "https://test2.gif"})
-			So(social.Valid(), ShouldBeTrue)
+			So(social.IsValid(), ShouldBeTrue)
 			So(err, ShouldBeNil)
 		})
 
