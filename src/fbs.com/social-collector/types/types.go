@@ -1,5 +1,9 @@
 package types
 
+import (
+	"errors"
+)
+
 type Config struct {
 	Fullcontact struct {
 		Url    string
@@ -22,14 +26,14 @@ type Social struct {
 	PhotoUrl    string `db:"photo_url"`
 }
 
-func (s Social) IsValid() bool {
+func (s Social) IsValid() error {
 	if s.UserId == 0 {
-		return false
+		return errors.New("UserId not found.")
 	}
 	if s.TwitterUrl != "" || s.FacebookUrl != "" || s.PhotoUrl != "" {
-		return true
+		return nil
 	} else {
-		return false
+		return errors.New("TwitterUrl or FacebookUrl or PhotoUrl not found.")
 	}
 }
 

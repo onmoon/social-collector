@@ -97,7 +97,7 @@ func search(user types.User, provider *providers.Fullcontact) (err error) {
 
 	social, err := provider.Request(user)
 
-	if err == nil && social.IsValid() {
+	if err == nil && social.IsValid() == nil {
 		err = DbMap.Insert(&social)
 	}
 	return
