@@ -1,11 +1,11 @@
 database:
   driver:           postgres
-  database:         fbs
-  username:         fbs
-  password:         f65_p455
-  host:             192.168.0.123
+  database:         
+  username:         
+  password:         
+  host:             
   port:             5432
 
 fullcontact:
-    key:            394cb184bf8f2586
+    key:            
     url:            https://api.fullcontact.com/v2/person.json
